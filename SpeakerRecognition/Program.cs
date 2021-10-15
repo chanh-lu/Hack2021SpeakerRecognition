@@ -21,31 +21,36 @@ namespace SpeakerRecognition
         {
             var config = SpeechConfig.FromSubscription(Settings.SubscriptionKey, Settings.Region);
 
-            await TextToSpeech.SynthesizeAudioAsync(config, "Speak some text to identify who it is from your list of enrolled speakers.");
+            bool isVerified;
 
-            var isVerified = await SpeakerRecognition.VerifySpeakerIdentity(config);
-
-            if (isVerified)
+            do
             {
-                await TextToSpeech.SynthesizeAudioAsync(config, "\nSpeaker verified.");
-                await TextToSpeech.SynthesizeAudioAsync(config, "\nWould you like to <approve> or <reject> the process <Time for lunch>");
-                var response = await SpeechToText.FromMic(config);
+                await TextToSpeech.SynthesizeAudioAsync(config, "\nSpeak some text to identify enrolled speakers.");
 
-                if (response.ToLower().Contains("approve"))
+                isVerified = await SpeakerRecognition.VerifySpeakerIdentity(config);
+
+                if (isVerified)
                 {
-                    Console.WriteLine("Process approved.");
+                    await TextToSpeech.SynthesizeAudioAsync(config, "Speaker verified.");
+                    await TextToSpeech.SynthesizeAudioAsync(config, "\nWould you like to <approve> or <reject> the process <Time for lunch>");
+                    var response = await SpeechToText.FromMic(config);
+
+                    if (response.ToLower().Contains("approve"))
+                    {
+                        await TextToSpeech.SynthesizeAudioAsync(config, "Process approved.");
+                    }
+                    else
+                    {
+                        await TextToSpeech.SynthesizeAudioAsync(config, "Process rejected.");
+                    }
+
+                    Console.WriteLine($"RECOGNISED: Text={response}");
                 }
                 else
                 {
-                    Console.WriteLine("Process rejected.");
+                    await TextToSpeech.SynthesizeAudioAsync(config, "Unknown speaker.");
                 }
-
-                Console.WriteLine($"RECOGNISED: Text={response}");
-            }
-            else
-            {
-                await TextToSpeech.SynthesizeAudioAsync(config, "Unknown speaker.");
-            }
+            } while (!isVerified);
             
             //await PrintProfiles(config);
             //await DeleteProfiles(config);
