@@ -17,12 +17,17 @@ namespace SpeakerRecognition
             VoiceProfileType.TextIndependentIdentification
         };
 
+        public static readonly IReadOnlyCollection<string> Tasks = new[]
+        {
+            "lunch on the Moon",
+            "drive around Mars"
+        };
+
         public static async Task Main(string[] args)
         {
             var config = SpeechConfig.FromSubscription(Settings.SubscriptionKey, Settings.Region);
 
             bool isVerified;
-
             do
             {
                 await TextToSpeech.SynthesizeAudioAsync(config, "\nSpeak some text to identify enrolled speakers.");
@@ -32,19 +37,24 @@ namespace SpeakerRecognition
                 if (isVerified)
                 {
                     await TextToSpeech.SynthesizeAudioAsync(config, "Speaker verified.");
-                    await TextToSpeech.SynthesizeAudioAsync(config, "\nWould you like to <approve> or <reject> the process <Time for lunch>");
-                    var response = await SpeechToText.FromMic(config);
+                    await TextToSpeech.SynthesizeAudioAsync(config, $"\nYou have {Tasks.Count} pending tasks.");
 
-                    if (response.ToLower().Contains("approve"))
+                    foreach (var task in Tasks)
                     {
-                        await TextToSpeech.SynthesizeAudioAsync(config, "Process approved.");
-                    }
-                    else
-                    {
-                        await TextToSpeech.SynthesizeAudioAsync(config, "Process rejected.");
-                    }
+                        await TextToSpeech.SynthesizeAudioAsync(config, $"\n<Approve> or <reject> task <{task}>?");
 
-                    Console.WriteLine($"RECOGNISED: Text={response}");
+                        var response = await SpeechToText.FromMic(config);
+                        var emailResponseSuccessful = await SendGrid.Send(task, response);
+
+                        if (emailResponseSuccessful)
+                        {
+                            await TextToSpeech.SynthesizeAudioAsync(config, $"\n{response} <{task}> sent.");
+                        }
+                        else
+                        {
+                            await TextToSpeech.SynthesizeAudioAsync(config, "Oops, something went wrong.  Please try again later.");
+                        }
+                    }
                 }
                 else
                 {
@@ -55,13 +65,11 @@ namespace SpeakerRecognition
             //await PrintProfiles(config);
             //await DeleteProfiles(config);
 
-            Console.WriteLine("\nTest ended. Press any key to close.");
-            Console.ReadLine();
+            await TextToSpeech.SynthesizeAudioAsync(config, "\nAll tasks completed.  Goodbye.");
         }
 
         public static async Task PrintProfiles(SpeechConfig config)
         {
-
             using var client = new VoiceProfileClient(config);
 
             foreach (var voiceProfileType in VoiceProfileTypes)

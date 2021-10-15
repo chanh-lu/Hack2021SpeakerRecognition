@@ -18,7 +18,7 @@ namespace SpeakerRecognition
 
         public static async Task<bool> VerifySpeakerIdentity(SpeechConfig config)
         {
-            const double similarityScoreMinThreshold = 0.5;
+            const double similarityScoreMinThreshold = 0.3;
 
             using var client = new VoiceProfileClient(config);
 

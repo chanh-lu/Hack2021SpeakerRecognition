@@ -7,6 +7,7 @@ namespace SpeakerRecognition
 {
     public static class Settings
     {
+        public static string SendGridApiKey = "";
         public static string SubscriptionKey = "";
         public static string Region = "westus";
     }
